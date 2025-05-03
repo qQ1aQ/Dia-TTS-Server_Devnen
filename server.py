@@ -1294,7 +1294,7 @@ if __name__ == "__main__":
     # Run Uvicorn server
     uvicorn.run(
         "server:app",
-        host=host,
+        host="0.0.0.0",
         port=port,
         reload=False,  # Keep reload=False for production/stability
         lifespan="on",
