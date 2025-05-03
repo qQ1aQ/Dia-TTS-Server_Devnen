@@ -23,8 +23,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }} # Use your Docker Hub username secret
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }} # Use your Docker Hub password/token secret
+          username: ${{ secrets.DOCKER_USERNAME }} # Use your Docker Hub username secret
+          password: ${{ secrets.DOCKER_PASSWORD }} # Use your Docker Hub password/token secret
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -33,9 +33,9 @@ jobs:
           file: Dockerfile # <-- MODIFIED: Pointing to the Dockerfile in the root
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/Dia-TTS-Server_Devnen:latest # <-- MODIFIED: Defining the desired repository name on Docker Hub
+          tags: ${{ secrets.DOCKER_USERNAME }}/Dia-TTS-Server_Devnen:latest # <-- MODIFIED: Defining the desired repository name on Docker Hub
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Echo Image Tag (for confirmation)
-        run: echo "Attempted to build and push ${{ secrets.DOCKER_HUB_USERNAME }}/Dia-TTS-Server_Devnen:latest to Docker Hub Free."
+        run: echo "Attempted to build and push ${{ secrets.DOCKER_USERNAME }}/Dia-TTS-Server_Devnen:latest to Docker Hub Free."
