@@ -35,6 +35,7 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware  # Added for CORS support
 import uvicorn
 import numpy as np
 
@@ -106,7 +107,6 @@ startup_complete_event = threading.Event()
 # get_valid_reference_files is now in utils.py
 # get_predefined_voices is now in utils.py
 
-
 # --- Application Lifespan (Startup/Shutdown) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -136,7 +136,7 @@ async def lifespan(app: FastAPI):
         else:
             logger.info("Dia model loaded successfully.")
             model_loaded_successfully = True
-
+            
             # Create and start a delayed browser opening thread only if model loaded
             host = get_host()
             port = get_port()
@@ -158,7 +158,6 @@ async def lifespan(app: FastAPI):
         # Add any specific cleanup needed
         logger.info("Application shutdown complete.")
 
-
 def _delayed_browser_open(host, port):
     """Opens browser after a short delay to ensure server is ready"""
     try:
@@ -176,7 +175,6 @@ def _delayed_browser_open(host, port):
     except Exception as e:
         logger.error(f"Failed to open browser automatically: {e}", exc_info=True)
 
-
 # --- FastAPI App Initialization ---
 app = FastAPI(
     title="Dia TTS Server",
@@ -184,6 +182,28 @@ app = FastAPI(
     version="1.4.0",  # Incremented version for config.yaml changes
     lifespan=lifespan,
 )
+
+# --- Add CORS Middleware ---
+# Configure allowed origins. Use "*" for testing to allow any origin.
+# For production, replace "*" with a list of specific allowed origins (e.g., ["http://your-frontend-domain.com"]).
+origins = [
+    "*",  # Allows all origins, including 'null' for local file testing
+    # You can add specific origins like:
+    # "http://localhost",
+    # "http://localhost:8000", # If you're serving your podcode.html locally on port 8000
+    # "null", # Explicitly for local file origins, though "*" covers it
+    # RunPod specific: If needed, add your RunPod IP/Host Port combination
+    # "http://157.157.221.29:21164",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,  # Allow cookies, authorization headers, etc. (Important for some auth flows)
+    allow_methods=["*"],     # Allow all standard HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],     # Allow all standard HTTP headers
+)
+# --- End CORS Middleware ---
 
 # Check/Create necessary folders on startup (redundant with lifespan but safe)
 folders_to_check = [
@@ -199,7 +219,6 @@ for folder in folders_to_check:
     except Exception as e:
         logger.warning(f"Could not create directory '{folder}': {e}")
 
-
 # --- Static Files and Templates ---
 try:
     app.mount("/outputs", StaticFiles(directory=get_output_path()), name="outputs")
@@ -213,7 +232,6 @@ except RuntimeError as e:
     logger.error(f"Failed to mount /ui directory: {e}. Web UI assets may not load.")
 
 templates = Jinja2Templates(directory="ui")
-
 
 # --- Configuration Routes (New YAML-based) ---
 @app.post(
@@ -260,7 +278,6 @@ async def save_settings(request: Request):
             status_code=500, detail=f"Internal server error during save: {str(e)}"
         )
 
-
 @app.post(
     "/reset_settings",
     tags=["Configuration"],
@@ -293,7 +310,6 @@ async def reset_settings():
             status_code=500, detail=f"Internal server error during reset: {str(e)}"
         )
 
-
 # --- Helper Endpoints for UI ---
 @app.get(
     "/get_reference_files",
@@ -311,7 +327,6 @@ async def get_reference_files_endpoint():
         raise HTTPException(
             status_code=500, detail="Failed to retrieve reference files."
         )
-
 
 @app.get(
     "/get_predefined_voices",
@@ -333,9 +348,7 @@ async def get_predefined_voices_endpoint():
             status_code=500, detail="Failed to retrieve predefined voices."
         )
 
-
 # --- API Endpoints (TTS Generation) ---
-
 
 @app.post(
     "/v1/audio/speech",
@@ -512,7 +525,6 @@ async def openai_tts_endpoint(request: OpenAITTSRequest):
         logger.debug(monitor.report())
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-
 @app.post(
     "/tts",
     response_class=StreamingResponse,
@@ -665,9 +677,7 @@ async def custom_tts_endpoint(request: CustomTTSRequest):
         logger.debug(monitor.report())
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-
 # --- Web UI Endpoints ---
-
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def get_web_ui(request: Request):
@@ -758,7 +768,6 @@ async def get_web_ui(request: Request):
             "<html><body><h1>Internal Server Error</h1><p>Could not load the TTS interface. Check server logs.</p></body></html>",
             status_code=500,
         )
-
 
 @app.post("/web/generate", response_class=HTMLResponse, include_in_schema=False)
 async def handle_web_ui_generate(
@@ -1142,7 +1151,6 @@ async def handle_web_ui_generate(
         status_code=status_code,  # Set appropriate HTTP status
     )
 
-
 # --- Reference Audio Upload Endpoint ---
 @app.post(
     "/upload_reference", tags=["UI Helpers"], summary="Upload reference audio files"
@@ -1230,7 +1238,6 @@ async def upload_reference_audio(files: List[UploadFile] = File(...)):
 
     return JSONResponse(content=response_data, status_code=status_code)
 
-
 # --- Health Check Endpoint ---
 @app.get("/health", tags=["Server Status"], summary="Check server health")
 async def health_check():
@@ -1239,7 +1246,6 @@ async def health_check():
     current_model_status = getattr(engine, "MODEL_LOADED", False)
     logger.debug(f"Health check returning model_loaded status: {current_model_status}")
     return {"status": "healthy", "model_loaded": current_model_status}
-
 
 # --- Main Execution ---
 if __name__ == "__main__":
