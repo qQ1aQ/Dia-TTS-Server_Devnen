@@ -33,9 +33,9 @@ jobs:
           file: Dockerfile # <-- MODIFIED: Pointing to the Dockerfile in the root
           platforms: linux/amd64
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/Dia-TTS-Server_Devnen:latest # <-- MODIFIED: Defining the desired repository name on Docker Hub
+          tags: ${{ secrets.DOCKER_USERNAME }}/dia-tts-server_devnen:latest # <-- MODIFIED: Defining the desired repository name on Docker Hub
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Echo Image Tag (for confirmation)
-        run: echo "Attempted to build and push ${{ secrets.DOCKER_USERNAME }}/Dia-TTS-Server_Devnen:latest to Docker Hub Free."
+        run: echo "Attempted to build and push ${{ secrets.DOCKER_USERNAME }}/dia-tts-server_devnen:latest to Docker Hub Free."
